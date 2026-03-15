@@ -12,16 +12,18 @@ with open("style.css") as f:
 st.markdown("### Manage your risk like a professional trader")
 
 # Inputs
+
+pair_type = st.selectbox(
+    "XAUUSD (Gold)",
+)
+
 balance = st.number_input("Account Balance ($)", value=1000)
 
 risk_percent = st.slider("Risk % per Trade", 1, 10, 2)
 
 stop_loss = st.number_input("Stop Loss (Pips)", value=50)
 
-pair_type = st.selectbox(
-    "Select Instrument",
-    ["Forex Pair", "XAUUSD (Gold)"]
-)
+
 
 # Pip values
 if pair_type == "Forex Pair":
