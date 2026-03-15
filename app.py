@@ -4,10 +4,7 @@ import streamlit as st
 with open("style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-<div class="main-title-box">
-📊 Forex Position Size Calculator
-</div>
-""", unsafe_allow_html=True)
+<div class="main-title-box"> """📊 Forex Position Size Calculator</div>""", unsafe_allow_html=True)
 
 st.markdown("### Manage your risk like a professional trader")
 
