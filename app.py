@@ -39,20 +39,19 @@ st.markdown("### Manage your risk like a professional trader")
 # --- Inputs ---
 pair_type = st.selectbox(
     "Select Instrument Type",
-    options=["Forex Pair", "XAUUSD (Gold)", "Other"]
+    options=["Forex Pair", "XAUUSD (Gold)", "Other"],
+    index=1  # XAUUSD selected by default
 )
 
 balance = st.number_input("Account Balance ($)", value=1000, step=100)
-
 risk_percent = st.slider("Risk % per Trade", 1, 10, 2)
-
 stop_loss = st.number_input("Stop Loss (Pips)", value=50, step=1)
 
 # --- Pip values ---
 if pair_type == "Forex Pair":
     pip_value = 10
 elif pair_type == "XAUUSD (Gold)":
-    pip_value = 1  # Adjust pip value according to gold
+    pip_value = 1  # Pip value for gold
 else:
     pip_value = 1
 
