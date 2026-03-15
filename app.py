@@ -1,4 +1,9 @@
 import streamlit as st
+import textwrap
+
+def html(raw: str):
+    """Render HTML — strips leading indent so Streamlit never treats it as a code block."""
+    st.markdown(textwrap.dedent(raw).strip(), unsafe_allow_html=True)
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -367,18 +372,18 @@ body::before {
 """, unsafe_allow_html=True)
 
 # ── Header ────────────────────────────────────────────────────────────────────
-st.markdown("""
+html("""
 <div class="header-wrap">
-    <div class="header-eyebrow">⚡ Professional Risk Management</div>
-    <div class="header-title">POSITION<br>CALCULATOR</div>
-    <div class="header-sub">XAU/USD · Forex · Commodities</div>
-    <div class="header-line"></div>
+<div class="header-eyebrow">&#9889; Professional Risk Management</div>
+<div class="header-title">POSITION<br>CALCULATOR</div>
+<div class="header-sub">XAU/USD &middot; Forex &middot; Commodities</div>
+<div class="header-line"></div>
 </div>
-""", unsafe_allow_html=True)
+""")
 
 # ── Inputs Card ───────────────────────────────────────────────────────────────
-st.markdown('<div class="calc-card">', unsafe_allow_html=True)
-st.markdown('<div class="section-label">01 · Instrument</div>', unsafe_allow_html=True)
+html('<div class="calc-card">')
+html('<div class="section-label">01 &middot; Instrument</div>')
 
 pair_type = st.selectbox(
     "Select Instrument Type",
@@ -386,7 +391,7 @@ pair_type = st.selectbox(
     index=0,
 )
 
-st.markdown('<div class="section-label" style="margin-top:24px;">02 · Account Parameters</div>', unsafe_allow_html=True)
+html('<div class="section-label" style="margin-top:24px;">02 &middot; Account Parameters</div>')
 
 col1, col2 = st.columns(2)
 with col1:
@@ -394,7 +399,7 @@ with col1:
 with col2:
     stop_loss = st.number_input("Stop Loss (Pips)", value=50, step=1, min_value=1)
 
-st.markdown('<div class="section-label" style="margin-top:24px;">03 · Risk Exposure</div>', unsafe_allow_html=True)
+html('<div class="section-label" style="margin-top:24px;">03 &middot; Risk Exposure</div>')
 
 risk_percent = st.slider("Risk % per Trade", min_value=0.5, max_value=10.0, value=2.0, step=0.5)
 
@@ -402,14 +407,14 @@ risk_percent = st.slider("Risk % per Trade", min_value=0.5, max_value=10.0, valu
 risk_dollar_preview = balance * (risk_percent / 100)
 col_a, col_b, col_c = st.columns([1, 1, 1])
 with col_b:
-    st.markdown(f"""
-    <div style="text-align:center; margin: 8px 0 4px;">
-        <div class="risk-badge">{risk_percent:.1f}%</div>
-        <div class="risk-label">≈ ${risk_dollar_preview:,.0f} at risk</div>
-    </div>
-    """, unsafe_allow_html=True)
+    html(f"""
+<div style="text-align:center; margin: 8px 0 4px;">
+<div class="risk-badge">{risk_percent:.1f}%</div>
+<div class="risk-label">approx ${risk_dollar_preview:,.0f} at risk</div>
+</div>
+""")
 
-st.markdown("</div>", unsafe_allow_html=True)
+html("</div>")
 
 # ── Calculate Button ──────────────────────────────────────────────────────────
 _, col_btn, _ = st.columns([0.5, 3, 0.5])
@@ -444,49 +449,29 @@ if calculate:
         "AGGRESSIVE"
     )
 
-    st.markdown(f"""
-    <div class="result-outer">
-
-        <div class="lot-label">Recommended Lot Size</div>
-        <div class="lot-value">{lot_size:.2f}</div>
-        <div class="lot-unit">Standard Lots</div>
-
-        <div class="stats-divider"></div>
-
-        <div class="stats-row">
-            <div class="stat-item">
-                <div class="stat-val" style="color:#e8d5a0;">${risk_amount:,.2f}</div>
-                <div class="stat-lbl">Capital at Risk</div>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item">
-                <div class="stat-val" style="color:#e8d5a0;">${pip_value}</div>
-                <div class="stat-lbl">Pip Value / Lot</div>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item">
-                <div class="stat-val" style="color:{risk_color};">{risk_tier}</div>
-                <div class="stat-lbl">Risk Profile</div>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item">
-                <div class="stat-val" style="color:#e8d5a0;">{stop_loss} pips</div>
-                <div class="stat-lbl">Stop Loss</div>
-            </div>
-        </div>
-
-        <div class="warning-strip">
-            ⚠ &nbsp; RISK DISCLOSURE — Trading leveraged instruments carries significant risk. 
-            Position sizes are calculated based on your defined risk parameters only. 
-            Past performance does not guarantee future results. Trade responsibly.
-        </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+    result_html = (
+        '<div class="result-outer">'
+        '<div class="lot-label">Recommended Lot Size</div>'
+        f'<div class="lot-value">{lot_size:.2f}</div>'
+        '<div class="lot-unit">Standard Lots</div>'
+        '<div class="stats-divider"></div>'
+        '<div class="stats-row">'
+        f'<div class="stat-item"><div class="stat-val" style="color:#e8d5a0;">${risk_amount:,.2f}</div><div class="stat-lbl">Capital at Risk</div></div>'
+        '<div class="stat-divider"></div>'
+        f'<div class="stat-item"><div class="stat-val" style="color:#e8d5a0;">${pip_value}</div><div class="stat-lbl">Pip Value / Lot</div></div>'
+        '<div class="stat-divider"></div>'
+        f'<div class="stat-item"><div class="stat-val" style="color:{risk_color};">{risk_tier}</div><div class="stat-lbl">Risk Profile</div></div>'
+        '<div class="stat-divider"></div>'
+        f'<div class="stat-item"><div class="stat-val" style="color:#e8d5a0;">{stop_loss} pips</div><div class="stat-lbl">Stop Loss</div></div>'
+        '</div>'
+        '<div class="warning-strip">'
+        '&#9888; RISK DISCLOSURE — Trading leveraged instruments carries significant risk. '
+        'Position sizes are calculated based on your defined risk parameters only. '
+        'Past performance does not guarantee future results. Trade responsibly.'
+        '</div>'
+        '</div>'
+    )
+    st.markdown(result_html, unsafe_allow_html=True)
 
 # ── Footer ────────────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="footer">
-    XAU/USD Position Calculator &nbsp;·&nbsp; Professional Risk Engine &nbsp;·&nbsp; v2.0
-</div>
-""", unsafe_allow_html=True)
+html('<div class="footer">XAU/USD Position Calculator &middot; Professional Risk Engine &middot; v2.0</div>')
