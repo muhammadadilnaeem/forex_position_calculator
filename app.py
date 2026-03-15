@@ -4,7 +4,25 @@ import streamlit as st
 with open("style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-<div class="main-title-box"> """📊 Forex Position Size Calculator</div>""", unsafe_allow_html=True)
+st.markdown("""
+<style>
+.main-title-box {
+    padding: 18px;
+    border-radius: 14px;
+    text-align: center;
+    font-size: 40px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
+    color: white;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    margin-bottom: 20px;
+}
+</style>
+
+<div class="main-title-box">
+📊 Forex Position Size Calculator
+</div>
+""", unsafe_allow_html=True)
 
 st.markdown("### Manage your risk like a professional trader")
 
