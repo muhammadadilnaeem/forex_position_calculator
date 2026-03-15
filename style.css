@@ -1,0 +1,22 @@
+.main-title {
+    font-size:40px;
+    font-weight:bold;
+    text-align:center;
+    color:#FFD700;
+}
+
+.card {
+    padding:30px;
+    border-radius:15px;
+    background-color:#1e1e1e;
+    box-shadow:0px 0px 15px rgba(0,0,0,0.4);
+}
+
+.result-box {
+    padding:20px;
+    border-radius:10px;
+    background-color:#0f5132;
+    color:white;
+    font-size:24px;
+    text-align:center;
+}
