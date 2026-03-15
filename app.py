@@ -4,6 +4,7 @@ import streamlit as st
 with open("style.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+# Gradient Heading
 st.markdown("""
 <style>
 .main-title-box {
@@ -17,6 +18,15 @@ st.markdown("""
     box-shadow: 0 6px 18px rgba(0,0,0,0.2);
     margin-bottom: 20px;
 }
+.result-box {
+    padding: 15px;
+    border-radius: 12px;
+    background-color: #f0f2f6;
+    font-weight: 600;
+    font-size: 22px;
+    text-align: center;
+    margin-top: 20px;
+}
 </style>
 
 <div class="main-title-box">
@@ -26,31 +36,30 @@ st.markdown("""
 
 st.markdown("### Manage your risk like a professional trader")
 
-# Inputs
-
+# --- Inputs ---
 pair_type = st.selectbox(
-    "XAUUSD (Gold)",
+    "Select Instrument Type",
+    options=["Forex Pair", "XAUUSD (Gold)", "Other"]
 )
 
-balance = st.number_input("Account Balance ($)", value=1000)
+balance = st.number_input("Account Balance ($)", value=1000, step=100)
 
 risk_percent = st.slider("Risk % per Trade", 1, 10, 2)
 
-stop_loss = st.number_input("Stop Loss (Pips)", value=50)
+stop_loss = st.number_input("Stop Loss (Pips)", value=50, step=1)
 
-
-
-# Pip values
+# --- Pip values ---
 if pair_type == "Forex Pair":
     pip_value = 10
+elif pair_type == "XAUUSD (Gold)":
+    pip_value = 1  # Adjust pip value according to gold
 else:
     pip_value = 1
 
-# Calculate
+# --- Calculate ---
 if st.button("Calculate Position Size"):
 
     risk_amount = balance * (risk_percent / 100)
-
     lot_size = risk_amount / (stop_loss * pip_value)
 
     st.markdown(
@@ -63,6 +72,5 @@ if st.button("Calculate Position Size"):
     )
 
     st.write("### Details")
-
     st.write(f"Risk Amount: ${risk_amount:.2f}")
     st.write(f"Pip Value: ${pip_value}")
