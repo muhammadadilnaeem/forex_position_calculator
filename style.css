@@ -1,14 +1,4 @@
-.main-title-box {
-    padding: 18px;
-    border-radius: 14px;
-    text-align: center;
-    font-size: 40px;
-    font-weight: 800;
-    background: linear-gradient(135deg, #00c6ff, #0072ff);
-    color: white;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
-    margin-bottom: 20px;
-}
+
 
 .card {
     padding:30px;
