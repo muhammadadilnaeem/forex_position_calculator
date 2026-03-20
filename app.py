@@ -431,7 +431,7 @@ with col2:
 
 html('<span class="section-label" style="margin-top:24px;">03 &middot; Risk Exposure</span>')
 
-risk_percent = st.slider("Risk % per Trade", min_value=0.5, max_value=10.0, value=2.0, step=0.5)
+risk_percent = st.slider("Risk % per Trade", min_value=0.5, max_value=100.0, value=2.0, step=0.5)
 
 # Live risk preview
 risk_dollar_preview = balance * (risk_percent / 100)
@@ -447,7 +447,7 @@ with col_b:
 html("</div>")  # close calc-card
 
 # ── Calculate Button ──────────────────────────────────────────────────────────
-_, col_btn, _ = st.columns([1, 2, 1])
+_, col_btn, _ = st.columns([1, 2, 2])
 with col_btn:
     calculate = st.button("⚡  Calculate Position Size")
 
