@@ -1,3 +1,4 @@
+
 import streamlit as st
 import textwrap
 
@@ -247,6 +248,10 @@ body::after {
 }
 
 /* ── Calculate button ── */
+div[data-testid="column"]:has(.stButton) {
+    display: flex;
+    justify-content: center;
+}
 .stButton > button {
     width: 100% !important;
     background: linear-gradient(135deg, #1a3a6e 0%, #D4AF37 100%) !important;
@@ -442,7 +447,7 @@ with col_b:
 html("</div>")  # close calc-card
 
 # ── Calculate Button ──────────────────────────────────────────────────────────
-_, col_btn, _ = st.columns([0.5, 3, 0.5])
+_, col_btn, _ = st.columns([1, 2, 1])
 with col_btn:
     calculate = st.button("⚡  Calculate Position Size")
 
