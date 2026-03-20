@@ -447,7 +447,7 @@ with col_b:
 html("</div>")  # close calc-card
 
 # ── Calculate Button ──────────────────────────────────────────────────────────
-_, col_btn, _ = st.columns([1, 2, 0.5])
+_, col_btn, _ = st.columns([1, 2, 0.25])
 with col_btn:
     calculate = st.button("⚡  Calculate Position Size")
 
