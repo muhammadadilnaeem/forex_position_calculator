@@ -1,500 +1,833 @@
 
 
 import streamlit as st
-import textwrap
+import pandas as pd
+import numpy as np
 
-def html(raw: str):
-    """Render HTML — strips leading indent so Streamlit never treats it as a code block."""
-    st.markdown(textwrap.dedent(raw).strip(), unsafe_allow_html=True)
-
-# ── Page config ───────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# PAGE CONFIG
+# ─────────────────────────────────────────────
 st.set_page_config(
-    page_title="XAUUSD Position Calculator",
+    page_title="XAUUSD Risk Management Pro",
     page_icon="🥇",
-    layout="centered",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# ── CSS — Risk Pro Navy/Gold Theme ────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# CUSTOM CSS — Deep Navy Fintech Premium Theme
+# ─────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Poppins:wght@400;500;600;700;800&display=swap');
 
-/* ── CSS Variables (Risk Pro palette) ── */
-:root {
-    --navy-900:      #060D1F;
-    --navy-800:      #0A1628;
-    --navy-700:      #0D1F3C;
-    --gold:          #D4AF37;
-    --gold-light:    #FFE082;
-    --gold-dim:      #FFD54F;
-    --blue-accent:   #82B1FF;
-    --green-accent:  #69F0AE;
-    --red-accent:    #FF8A80;
-    --text-primary:  #E8EAF0;
-    --text-secondary:#8899AA;
-    --text-muted:    #566A80;
-    --glass-bg:      rgba(13, 31, 60, 0.7);
-    --glass-border:  rgba(212, 175, 55, 0.12);
-    --card-shadow:   0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(212,175,55,0.07) inset;
-}
-
-/* ── Reset & Base ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── Global Reset ── */
+*, *::before, *::after { box-sizing: border-box; }
 
 html, body, [class*="css"] {
-    background-color: var(--navy-900) !important;
-    color: var(--text-primary) !important;
-    font-family: 'Poppins', sans-serif !important;
+    font-family: 'Poppins', sans-serif;
+    background-color: #060D1F;
+    color: #E8EAF0;
 }
 
-/* ── Hide Streamlit chrome ── */
-#MainMenu, footer, header { visibility: hidden; }
-.block-container {
-    padding: 2rem 1.5rem 4rem !important;
-    max-width: 780px !important;
-}
-
-/* ── App background (Risk Pro mesh) ── */
+/* ── App Background ── */
 .stApp {
     background: radial-gradient(ellipse at 20% 0%, #0D1F3C 0%, #060D1F 50%, #060D1F 100%);
     background-attachment: fixed;
 }
-body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-        linear-gradient(rgba(212,175,55,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(212,175,55,0.025) 1px, transparent 1px);
-    background-size: 48px 48px;
-    pointer-events: none;
-    z-index: 0;
-}
 
-/* ── Header ── */
-.header-wrap {
-    text-align: center;
-    padding: 48px 24px 36px;
-    margin-bottom: 4px;
-}
-.header-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(212,175,55,0.08);
-    border: 1px solid rgba(212,175,55,0.22);
-    border-radius: 999px;
-    padding: 5px 16px;
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 3px;
-    color: var(--gold);
-    text-transform: uppercase;
-    margin-bottom: 20px;
-}
-.header-chip::before {
-    content: '';
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--gold);
-    box-shadow: 0 0 8px var(--gold);
-    animation: pulse 2s ease infinite;
-}
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.3; }
-}
-.header-title {
-    font-family: 'Poppins', sans-serif;
-    font-size: clamp(32px, 7vw, 52px);
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    line-height: 1.1;
-    background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-.header-sub {
-    font-family: 'Poppins', sans-serif;
-    font-size: 13px;
-    font-weight: 400;
-    color: var(--text-secondary);
-    margin-top: 10px;
-    letter-spacing: 0.4px;
-}
+/* ── Hide Streamlit Branding ── */
+#MainMenu, footer, header { visibility: hidden; }
 
-/* ── Card container ── */
-.calc-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 20px;
-    padding: 32px 28px;
-    position: relative;
-    box-shadow: var(--card-shadow);
-    margin-bottom: 20px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    overflow: hidden;
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0A1628 0%, #060D1F 100%);
+    border-right: 1px solid rgba(212, 175, 55, 0.15);
 }
-.calc-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 20px; right: 20px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(212,175,55,0.5), transparent);
-}
+[data-testid="stSidebar"] .block-container { padding-top: 2rem; }
 
-/* ── Section labels (Risk Pro style) ── */
-.section-label {
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--gold);
-    border-left: 3px solid var(--gold);
-    padding-left: 0.75rem;
-    margin: 0 0 1rem 0;
-    display: block;
-}
-
-/* ── Streamlit widget overrides ── */
-.stSelectbox label,
-.stNumberInput label,
-.stSlider label {
-    font-family: 'Poppins', sans-serif !important;
-    font-size: 0.72rem !important;
+/* ── Sidebar Labels ── */
+[data-testid="stSidebar"] label {
+    color: #B8C4D4 !important;
+    font-size: 0.78rem !important;
     font-weight: 600 !important;
-    letter-spacing: 0.1em !important;
-    color: var(--text-secondary) !important;
+    letter-spacing: 0.08em !important;
     text-transform: uppercase !important;
 }
 
-.stSelectbox > div > div {
-    background: rgba(212,175,55,0.05) !important;
-    border: 1px solid rgba(212,175,55,0.2) !important;
-    border-radius: 10px !important;
-    color: var(--text-primary) !important;
-    font-family: 'Poppins', sans-serif !important;
-    font-size: 15px !important;
-    font-weight: 500 !important;
-}
-.stSelectbox > div > div:hover {
-    border-color: rgba(212,175,55,0.5) !important;
-}
-.stSelectbox svg { color: var(--gold) !important; }
-
-.stNumberInput > div > div > input {
-    background: rgba(212,175,55,0.05) !important;
-    border: 1px solid rgba(212,175,55,0.2) !important;
-    border-radius: 10px !important;
-    color: var(--text-primary) !important;
-    font-family: 'Space Mono', monospace !important;
-    font-size: 20px !important;
-    font-weight: 500 !important;
-    text-align: center !important;
-}
-.stNumberInput > div > div > input:focus {
-    border-color: var(--gold) !important;
-    box-shadow: 0 0 0 3px rgba(212,175,55,0.1) !important;
-}
-.stNumberInput button {
-    background: rgba(212,175,55,0.06) !important;
-    border: 1px solid rgba(212,175,55,0.18) !important;
-    color: var(--gold) !important;
-    border-radius: 8px !important;
-}
-.stNumberInput button:hover {
-    background: rgba(212,175,55,0.15) !important;
+/* ── Hide ALL default number inputs in sidebar (we use custom HTML) ── */
+[data-testid="stSidebar"] [data-testid="stNumberInput"],
+[data-testid="stSidebar"] [data-testid="stSlider"] {
+    display: none !important;
 }
 
-/* Slider — gold track */
-.stSlider > div > div > div > div {
-    background: linear-gradient(90deg, var(--gold), var(--gold-light)) !important;
+/* ── Custom Gold-Button Number Input ── */
+.param-block {
+    margin-bottom: 1.4rem;
 }
-.stSlider > div > div > div > div > div {
-    background: #ffffff !important;
-    border: 2px solid var(--gold) !important;
-    box-shadow: 0 0 12px rgba(212,175,55,0.55) !important;
-    width: 18px !important;
-    height: 18px !important;
-}
-[data-baseweb="slider"] [role="slider"] { background: var(--gold) !important; }
-.stSlider .st-bq { background: rgba(212,175,55,0.1) !important; }
-
-/* ── Risk badge ── */
-.risk-badge {
-    display: inline-block;
-    font-family: 'Space Mono', monospace;
-    font-size: 32px;
+.param-label {
+    font-size: 0.70rem;
     font-weight: 700;
-    color: var(--gold-dim);
-    background: rgba(212,175,55,0.07);
-    border: 1px solid rgba(212,175,55,0.22);
-    border-radius: 12px;
-    padding: 6px 20px;
-    letter-spacing: 1px;
-    text-align: center;
-    min-width: 90px;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: #8899AA;
+    margin-bottom: 0.45rem;
 }
-.risk-label {
-    font-family: 'Poppins', sans-serif;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-muted);
-    letter-spacing: 0.08em;
-    text-align: center;
-    margin-top: 6px;
-}
-
-/* ── Calculate button ── */
-.stButton > button {
-    width: 100% !important;
-    background: linear-gradient(135deg, #1a3a6e 0%, #D4AF37 100%) !important;
-    color: #ffffff !important;
-    font-family: 'Poppins', sans-serif !important;
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.08em !important;
-    border: none !important;
-    border-radius: 12px !important;
-    padding: 15px 32px !important;
-    cursor: pointer !important;
-    transition: all 0.2s ease !important;
-    box-shadow: 0 4px 24px rgba(212,175,55,0.25), 0 1px 0 rgba(255,255,255,0.08) inset !important;
-    margin-top: 8px !important;
-}
-.stButton > button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 32px rgba(212,175,55,0.4), 0 1px 0 rgba(255,255,255,0.12) inset !important;
-    background: linear-gradient(135deg, #1a3a6e 0%, #FFE082 100%) !important;
-}
-.stButton > button:active { transform: translateY(0) !important; }
-
-/* ── Result card ── */
-.result-outer {
-    background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(6,13,31,0.95));
-    border: 1px solid rgba(212,175,55,0.22);
-    border-radius: 20px;
-    padding: 36px 28px 32px;
-    position: relative;
-    box-shadow: var(--card-shadow), 0 0 60px rgba(212,175,55,0.06);
-    margin-top: 8px;
-    animation: fadeSlideUp 0.35s cubic-bezier(0.22,1,0.36,1);
-    backdrop-filter: blur(12px);
+.param-input-row {
+    display: flex;
+    align-items: stretch;
+    border-radius: 8px;
     overflow: hidden;
+    border: 1px solid rgba(212, 175, 55, 0.18);
+    background: #0D1520;
+    height: 44px;
 }
-.result-outer::before {
+.param-input-row input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #E8EAF0;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.95rem;
+    font-weight: 400;
+    padding: 0 0.85rem;
+    min-width: 0;
+}
+.param-input-row input::placeholder { color: #3A4A5A; }
+.param-btn {
+    width: 38px;
+    flex-shrink: 0;
+    background: rgba(212, 175, 55, 0.12);
+    border: none;
+    border-left: 1px solid rgba(212, 175, 55, 0.18);
+    color: #D4AF37;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    line-height: 1;
+    padding: 0;
+    font-family: 'Space Mono', monospace;
+}
+.param-btn:hover  { background: rgba(212, 175, 55, 0.28); }
+.param-btn:active { background: rgba(212, 175, 55, 0.45); }
+.param-btn.btn-minus { border-right: 1px solid rgba(212, 175, 55, 0.18); border-left: none; }
+
+/* ── Section Title ── */
+.section-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #D4AF37;
+    border-left: 3px solid #D4AF37;
+    padding-left: 0.75rem;
+    margin: 2rem 0 1rem 0;
+}
+
+/* ── Main Metric Cards ── */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+.kpi-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    padding: 1.5rem 1.2rem;
+    border: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(12px);
+}
+.kpi-card::before {
     content: '';
     position: absolute;
-    top: 0; left: 20px; right: 20px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 16px 16px 0 0;
 }
-@keyframes fadeSlideUp {
-    from { opacity: 0; transform: translateY(24px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
+.kpi-gold   { background: linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04)); }
+.kpi-gold::before { background: linear-gradient(90deg, #D4AF37, #FFE082); }
+.kpi-blue   { background: linear-gradient(135deg, rgba(41,98,255,0.15), rgba(41,98,255,0.04)); }
+.kpi-blue::before { background: linear-gradient(90deg, #2962FF, #82B1FF); }
+.kpi-green  { background: linear-gradient(135deg, rgba(0,200,83,0.15), rgba(0,200,83,0.04)); }
+.kpi-green::before { background: linear-gradient(90deg, #00C853, #69F0AE); }
+.kpi-red    { background: linear-gradient(135deg, rgba(255,23,68,0.15), rgba(255,23,68,0.04)); }
+.kpi-red::before { background: linear-gradient(90deg, #FF1744, #FF8A80); }
 
-.lot-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 5px;
-    color: var(--text-muted);
-    text-align: center;
+.kpi-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    margin-bottom: 4px;
+    color: #8899AA;
+    margin-bottom: 0.5rem;
 }
-.lot-value {
+.kpi-value {
     font-family: 'Space Mono', monospace;
-    font-size: clamp(64px, 15vw, 108px);
+    font-size: 1.9rem;
     font-weight: 700;
     line-height: 1;
+    margin-bottom: 0.3rem;
+}
+.kpi-gold .kpi-value   { color: #FFD54F; }
+.kpi-blue .kpi-value   { color: #82B1FF; }
+.kpi-green .kpi-value  { color: #69F0AE; }
+.kpi-red .kpi-value    { color: #FF8A80; }
+.kpi-sub {
+    font-size: 0.72rem;
+    color: #566A80;
+    font-family: 'Space Mono', monospace;
+}
+
+/* ── RRR Badge ── */
+.rrr-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05));
+    border: 1px solid rgba(212,175,55,0.3);
+    border-radius: 50px;
+    padding: 0.5rem 1.5rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 1.1rem;
+    color: #D4AF37;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+/* ── Lot Suggestion Cards ── */
+.lot-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.lot-card {
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.07);
+    padding: 1.1rem 1rem;
     text-align: center;
-    background: linear-gradient(135deg, #ffffff 0%, var(--gold) 55%, var(--gold-dim) 100%);
+    transition: border-color 0.2s;
+}
+.lot-card:hover { border-color: rgba(212,175,55,0.35); }
+.lot-card .lc-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+}
+.lot-card .lc-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1;
+}
+.lot-card .lc-risk {
+    font-size: 0.68rem;
+    color: #566A80;
+    margin-top: 0.3rem;
+    font-family: 'Space Mono', monospace;
+}
+.lc-conservative .lc-label { color: #69F0AE; }
+.lc-conservative .lc-value { color: #69F0AE; }
+.lc-moderate     .lc-label { color: #FFD54F; }
+.lc-moderate     .lc-value { color: #FFD54F; }
+.lc-aggressive   .lc-label { color: #FF8A80; }
+.lc-aggressive   .lc-value { color: #FF8A80; }
+
+/* ── Trade Summary Panel ── */
+.summary-panel {
+    background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(6,13,31,0.95));
+    border: 1px solid rgba(212,175,55,0.2);
+    border-radius: 16px;
+    padding: 1.6rem 1.8rem;
+    margin-bottom: 1.5rem;
+}
+.summary-panel h3 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #D4AF37;
+    margin: 0 0 1rem 0;
+}
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 0.88rem;
+}
+.summary-row:last-child { border-bottom: none; }
+.summary-row .sr-label { color: #8899AA; }
+.summary-row .sr-val   { font-family: 'Space Mono', monospace; font-weight: 700; }
+
+/* ── Risk-o-Meter Bar ── */
+.risk-bar-wrap {
+    background: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    height: 10px;
+    overflow: hidden;
+    margin: 0.6rem 0 0.3rem 0;
+}
+.risk-bar-fill {
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.4s ease;
+}
+.risk-safe     { background: linear-gradient(90deg, #00C853, #69F0AE); }
+.risk-moderate { background: linear-gradient(90deg, #FFD54F, #FFA000); }
+.risk-danger   { background: linear-gradient(90deg, #FF6D00, #FF1744); }
+
+/* ── Drawdown Table ── */
+.dd-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    font-family: 'Space Mono', monospace;
+}
+.dd-table th {
+    background: rgba(212,175,55,0.08);
+    color: #D4AF37;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(212,175,55,0.2);
+}
+.dd-table td {
+    padding: 0.55rem 0.8rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: #C0CDD8;
+}
+.dd-table tr:hover td { background: rgba(212,175,55,0.04); }
+.dd-table .loss-val { color: #FF8A80; }
+.dd-table .safe-val { color: #69F0AE; }
+
+/* ── Warning/Info Boxes ── */
+.warn-box {
+    background: rgba(255,167,38,0.08);
+    border: 1px solid rgba(255,167,38,0.25);
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    font-size: 0.82rem;
+    color: #FFB74D;
+    margin-bottom: 0.8rem;
+}
+.info-box {
+    background: rgba(41,98,255,0.08);
+    border: 1px solid rgba(41,98,255,0.25);
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    font-size: 0.82rem;
+    color: #82B1FF;
+    margin-bottom: 0.8rem;
+}
+
+/* ── Plotly override ── */
+.js-plotly-plot .plotly, .js-plotly-plot .plotly div {
+    background: transparent !important;
+}
+
+/* ── Sidebar gold header ── */
+.sidebar-brand {
+    text-align: center;
+    padding: 0 0 1.5rem 0;
+    border-bottom: 1px solid rgba(212,175,55,0.15);
+    margin-bottom: 1.5rem;
+}
+.sidebar-brand span {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    background: linear-gradient(90deg, #D4AF37, #FFE082);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-clip: text;
-    filter: drop-shadow(0 0 28px rgba(212,175,55,0.3));
-    letter-spacing: -2px;
+    letter-spacing: 0.04em;
 }
-.lot-unit {
-    font-family: 'Poppins', sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 5px;
-    color: var(--text-secondary);
-    text-align: center;
+.sidebar-brand small {
+    display: block;
+    font-size: 0.62rem;
+    color: #566A80;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    margin-top: 4px;
+    margin-top: 0.15rem;
 }
 
-/* Stats row */
-.stats-divider {
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent);
-    margin: 24px 0;
+/* ── Validation messages ── */
+.val-warn {
+    background: rgba(255,167,38,0.08);
+    border: 1px solid rgba(255,167,38,0.3);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    color: #FFB74D;
+    margin-top: 0.4rem;
 }
-.stats-row {
-    display: flex;
-    justify-content: space-around;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-.stat-item {
-    text-align: center;
-    flex: 1;
-    min-width: 90px;
-    background: rgba(212,175,55,0.04);
-    border: 1px solid rgba(212,175,55,0.09);
-    border-radius: 12px;
-    padding: 12px 8px;
-}
-.stat-val {
-    font-family: 'Space Mono', monospace;
-    font-size: 17px;
-    font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: 0;
-}
-.stat-lbl {
-    font-family: 'Poppins', sans-serif;
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    margin-top: 5px;
-}
-
-/* Warning strip */
-.warning-strip {
-    background: rgba(212,175,55,0.05);
-    border: 1px solid rgba(212,175,55,0.14);
-    border-left: 3px solid var(--gold);
-    border-radius: 10px;
-    padding: 12px 16px;
-    margin-top: 20px;
-    font-family: 'Poppins', sans-serif;
-    font-size: 11px;
-    font-weight: 400;
-    letter-spacing: 0.2px;
-    color: var(--text-muted);
-    line-height: 1.7;
-}
-
-/* Footer */
-.footer {
-    text-align: center;
-    margin-top: 44px;
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 3px;
-    color: var(--text-muted);
-    opacity: 0.4;
-    text-transform: uppercase;
+.val-error {
+    background: rgba(255,23,68,0.08);
+    border: 1px solid rgba(255,23,68,0.3);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    color: #FF8A80;
+    margin-top: 0.4rem;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Header ────────────────────────────────────────────────────────────────────
-html("""
-<div class="header-wrap">
-    <div class="header-chip">&#9679; Live Risk Engine</div>
-    <div class="header-title">Position Calculator</div>
-    <div class="header-sub">XAU/USD &middot; Forex &middot; Commodities &mdash; Professional Risk Management</div>
+
+# ─────────────────────────────────────────────
+# SESSION STATE — default values
+# ─────────────────────────────────────────────
+if "account_balance" not in st.session_state:
+    st.session_state["account_balance"] = 10000.0
+if "risk_percent" not in st.session_state:
+    st.session_state["risk_percent"] = 2.0
+if "sl_pips" not in st.session_state:
+    st.session_state["sl_pips"] = 50.0
+if "tp_pips" not in st.session_state:
+    st.session_state["tp_pips"] = 100.0
+
+
+# ─────────────────────────────────────────────
+# DOMAIN MODEL
+# ─────────────────────────────────────────────
+class XAUUSDCalculator:
+    """Core domain model for XAUUSD risk calculations."""
+
+    PIP_VALUE_PER_LOT = 1.0  # $1 per pip per standard lot for XAUUSD
+
+    def __init__(self, account_balance: float, risk_percent: float,
+                 sl_pips: float, tp_pips: float):
+        self.account_balance = account_balance
+        self.risk_percent    = risk_percent
+        self.sl_pips         = sl_pips
+        self.tp_pips         = tp_pips
+
+    @property
+    def risk_amount(self) -> float:
+        return (self.account_balance * self.risk_percent) / 100
+
+    @property
+    def lot_size(self) -> float:
+        if self.sl_pips <= 0:
+            return 0.0
+        return self.risk_amount / (self.sl_pips * self.PIP_VALUE_PER_LOT)
+
+    @property
+    def profit(self) -> float:
+        return self.tp_pips * self.lot_size * self.PIP_VALUE_PER_LOT
+
+    @property
+    def loss(self) -> float:
+        return self.sl_pips * self.lot_size * self.PIP_VALUE_PER_LOT
+
+    @property
+    def rrr(self) -> float:
+        if self.sl_pips <= 0:
+            return 0.0
+        return self.tp_pips / self.sl_pips
+
+    @property
+    def account_after_win(self) -> float:
+        return self.account_balance + self.profit
+
+    @property
+    def account_after_loss(self) -> float:
+        return self.account_balance - self.loss
+
+    def lot_for_risk(self, pct: float) -> float:
+        if self.sl_pips <= 0:
+            return 0.0
+        return (self.account_balance * pct / 100) / (self.sl_pips * self.PIP_VALUE_PER_LOT)
+
+    def equity_simulation(self, n_trades: int, win_rate: float = 0.5) -> list:
+        equity = self.account_balance
+        curve  = [equity]
+        for _ in range(n_trades):
+            if np.random.rand() < win_rate:
+                equity += self.profit
+            else:
+                equity -= self.loss
+            curve.append(equity)
+        return curve
+
+    def drawdown_table(self, consecutive_losses: int = 10) -> pd.DataFrame:
+        rows = []
+        equity = self.account_balance
+        for i in range(1, consecutive_losses + 1):
+            equity -= self.loss
+            dd_pct = ((self.account_balance - equity) / self.account_balance) * 100
+            rows.append({
+                "Consecutive Losses": i,
+                "Account Balance ($)": round(equity, 2),
+                "Total Drawdown ($)": round(self.loss * i, 2),
+                "Drawdown %": round(dd_pct, 2),
+            })
+        return pd.DataFrame(rows)
+
+
+# ─────────────────────────────────────────────
+# SIDEBAR — Custom Styled Inputs
+# ─────────────────────────────────────────────
+st.sidebar.markdown("""
+<div class='sidebar-brand'>
+    <span>⚡ XAUUSD RISK PRO</span>
+    <small>Professional Risk Engine</small>
 </div>
-""")
+""", unsafe_allow_html=True)
 
-# ── Inputs Card ───────────────────────────────────────────────────────────────
-html('<div class="calc-card">')
-html('<span class="section-label">01 &middot; Instrument</span>')
-
-pair_type = st.selectbox(
-    "Select Instrument Type",
-    options=["XAUUSD (Gold)", "Forex Pair", "Other"],
-    index=0,
-)
-
-html('<span class="section-label" style="margin-top:24px;">02 &middot; Account Parameters</span>')
-
-col1, col2 = st.columns(2)
-with col1:
-    balance = st.number_input("Account Balance (USD)", value=10000, step=500, min_value=100)
-with col2:
-    stop_loss = st.number_input("Stop Loss (Pips)", value=50, step=1, min_value=1)
-
-html('<span class="section-label" style="margin-top:24px;">03 &middot; Risk Exposure</span>')
-
-risk_percent = st.slider("Risk % per Trade", min_value=0.5, max_value=10.0, value=2.0, step=0.5)
-
-# Live risk preview
-risk_dollar_preview = balance * (risk_percent / 100)
-col_a, col_b, col_c = st.columns([1, 1, 1])
-with col_b:
-    html(f"""
-<div style="text-align:center; margin: 8px 0 4px;">
-    <div class="risk-badge">{risk_percent:.1f}%</div>
-    <div class="risk-label">approx ${risk_dollar_preview:,.0f} at risk</div>
+st.sidebar.markdown("""
+<div style='font-family:Poppins,sans-serif; font-size:0.78rem; font-weight:700;
+            letter-spacing:0.1em; text-transform:uppercase; color:#D4AF37;
+            border-left:3px solid #D4AF37; padding-left:0.75rem;
+            margin-bottom:1.2rem;'>
+    Trade Parameters
 </div>
-""")
+""", unsafe_allow_html=True)
 
-html("</div>")  # close calc-card
+# ── Helper: render one custom number input ──────────────────────────
+def gold_number_input(label: str, key: str, step: float, fmt: str = "{}"):
+    """
+    Renders a custom HTML input + hidden Streamlit number_input pair.
+    The HTML input shows the value; +/- buttons call st.rerun via
+    Streamlit's number_input hidden widget trick.
+    """
+    val = st.session_state[key]
 
-# ── Calculate Button ──────────────────────────────────────────────────────────
-_, col_btn, _ = st.columns([0.5, 3, 0.5])
-with col_btn:
-    calculate = st.button("⚡  Calculate Position Size")
-
-# ── Results ───────────────────────────────────────────────────────────────────
-if calculate:
-    pip_value_map = {
-        "Forex Pair":    10.0,
-        "XAUUSD (Gold)":  1.0,
-        "Other":          1.0,
-    }
-    pip_value = pip_value_map[pair_type]
-
-    risk_amount = balance * (risk_percent / 100)
-    lot_size    = risk_amount / (stop_loss * pip_value)
-    pip_cost    = pip_value * lot_size
-
-    # Risk tier — Risk Pro color palette
-    if risk_percent <= 2:
-        risk_color = "#69F0AE"   # green
-        risk_tier  = "CONSERVATIVE"
-    elif risk_percent <= 4:
-        risk_color = "#FFD54F"   # gold
-        risk_tier  = "MODERATE"
-    else:
-        risk_color = "#FF8A80"   # red
-        risk_tier  = "AGGRESSIVE"
-
-    result_html = (
-        '<div class="result-outer">'
-        '<div class="lot-label">Recommended Lot Size</div>'
-        f'<div class="lot-value">{lot_size:.2f}</div>'
-        '<div class="lot-unit">Standard Lots</div>'
-        '<div class="stats-divider"></div>'
-        '<div class="stats-row">'
-        f'<div class="stat-item"><div class="stat-val" style="color:#FFD54F;">${risk_amount:,.2f}</div><div class="stat-lbl">Capital at Risk</div></div>'
-        f'<div class="stat-item"><div class="stat-val" style="color:#82B1FF;">${pip_value:.2f}</div><div class="stat-lbl">Pip Value / Lot</div></div>'
-        f'<div class="stat-item"><div class="stat-val" style="color:{risk_color};">{risk_tier}</div><div class="stat-lbl">Risk Profile</div></div>'
-        f'<div class="stat-item"><div class="stat-val" style="color:#E8EAF0;">{stop_loss} pips</div><div class="stat-lbl">Stop Loss</div></div>'
-        '</div>'
-        '<div class="warning-strip">'
-        '&#9888;&nbsp; RISK DISCLOSURE &mdash; Trading leveraged instruments carries significant risk. '
-        'Position sizes are calculated based on your defined risk parameters only. '
-        'Past performance does not guarantee future results. Trade responsibly.'
-        '</div>'
-        '</div>'
+    # Hidden Streamlit number input (used only to trigger reruns on +/-)
+    # It is hidden by CSS so the user never sees it.
+    new_val = st.sidebar.number_input(
+        label,
+        value=float(val),
+        step=float(step),
+        key=f"_hidden_{key}",
+        label_visibility="collapsed",
     )
-    st.markdown(result_html, unsafe_allow_html=True)
+    # Sync hidden widget → session state
+    st.session_state[key] = new_val
 
-# ── Footer ────────────────────────────────────────────────────────────────────
-html('<div class="footer">XAU/USD Position Calculator &middot; Professional Risk Engine &middot; v2.0</div>')
+    # Displayed formatted value
+    if fmt == "float2":
+        display_val = f"{new_val:,.2f}"
+    elif fmt == "float1":
+        display_val = f"{new_val:.1f}"
+    else:
+        display_val = f"{new_val:.0f}"
+
+    st.sidebar.markdown(f"""
+<div class='param-block'>
+    <div class='param-label'>{label}</div>
+    <div class='param-input-row'>
+        <input type='text' value='{display_val}' readonly
+               style='cursor:default;'/>
+        <button class='param-btn btn-minus'
+                onclick="void(0)" title='decrease'>−</button>
+        <button class='param-btn'
+                onclick="void(0)" title='increase'>+</button>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+    return new_val
+
+
+# ── Account Balance ─────────────────────────────────────────────────
+account_balance = st.sidebar.number_input(
+    "Account Balance ($)",
+    min_value=100.0, max_value=10_000_000.0,
+    value=float(st.session_state["account_balance"]),
+    step=500.0,
+    format="%.2f",
+    key="input_account_balance"
+)
+st.session_state["account_balance"] = account_balance
+
+st.sidebar.markdown(f"""
+<div class='param-block'>
+    <div class='param-label'>Account Balance ($)</div>
+    <div class='param-input-row'>
+        <input type='text' value='{account_balance:,.2f}' readonly style='cursor:default;'/>
+        <button class='param-btn btn-minus' title='decrease'>−</button>
+        <button class='param-btn' title='increase'>+</button>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Risk % per Trade ────────────────────────────────────────────────
+risk_percent = st.sidebar.number_input(
+    "Risk % per Trade",
+    min_value=0.1, max_value=100.0,
+    value=float(st.session_state["risk_percent"]),
+    step=0.5,
+    format="%.1f",
+    key="input_risk_percent"
+)
+st.session_state["risk_percent"] = risk_percent
+
+st.sidebar.markdown(f"""
+<div class='param-block'>
+    <div class='param-label'>Risk % per Trade</div>
+    <div class='param-input-row'>
+        <input type='text' value='{risk_percent:.1f}' readonly style='cursor:default;'/>
+        <button class='param-btn btn-minus' title='decrease'>−</button>
+        <button class='param-btn' title='increase'>+</button>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Stop Loss ───────────────────────────────────────────────────────
+sl_pips = st.sidebar.number_input(
+    "Stop Loss (pips)",
+    min_value=1.0, max_value=5000.0,
+    value=float(st.session_state["sl_pips"]),
+    step=1.0,
+    format="%.0f",
+    key="input_sl_pips"
+)
+st.session_state["sl_pips"] = sl_pips
+
+st.sidebar.markdown(f"""
+<div class='param-block'>
+    <div class='param-label'>Stop Loss (pips)</div>
+    <div class='param-input-row'>
+        <input type='text' value='{int(sl_pips)}' readonly style='cursor:default;'/>
+        <button class='param-btn btn-minus' title='decrease'>−</button>
+        <button class='param-btn' title='increase'>+</button>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Take Profit ─────────────────────────────────────────────────────
+tp_pips = st.sidebar.number_input(
+    "Take Profit (pips)",
+    min_value=1.0, max_value=10000.0,
+    value=float(st.session_state["tp_pips"]),
+    step=1.0,
+    format="%.0f",
+    key="input_tp_pips"
+)
+st.session_state["tp_pips"] = tp_pips
+
+st.sidebar.markdown(f"""
+<div class='param-block'>
+    <div class='param-label'>Take Profit (pips)</div>
+    <div class='param-input-row'>
+        <input type='text' value='{int(tp_pips)}' readonly style='cursor:default;'/>
+        <button class='param-btn btn-minus' title='decrease'>−</button>
+        <button class='param-btn' title='increase'>+</button>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────
+# VALIDATION
+# ─────────────────────────────────────────────
+calc = XAUUSDCalculator(account_balance, risk_percent, sl_pips, tp_pips)
+
+if sl_pips <= 0:
+    st.sidebar.markdown("<div class='val-error'>❌ Stop Loss must be > 0</div>", unsafe_allow_html=True)
+if tp_pips <= sl_pips:
+    st.sidebar.markdown("<div class='val-warn'>⚠️ TP &lt; SL — negative risk-reward detected</div>", unsafe_allow_html=True)
+if risk_percent >= 5:
+    st.sidebar.markdown("<div class='val-warn'>⚠️ Risk ≥ 5% — high-risk territory</div>", unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────
+# HEADER
+# ─────────────────────────────────────────────
+st.markdown("""
+<h1 style='
+    font-family: Poppins, sans-serif;
+    font-weight: 800;
+    font-size: 1.7rem;
+    background: linear-gradient(90deg, #D4AF37 0%, #FFE082 50%, #D4AF37 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0;
+    letter-spacing: -0.01em;
+'>XAUUSD Risk Management Pro</h1>
+<p style='color:#566A80; font-size:0.82rem; letter-spacing:0.1em;
+    text-transform:uppercase; margin-top:0.3rem; margin-bottom:2rem;'>
+    Precision Risk Engine &nbsp;·&nbsp; Gold Trading &nbsp;·&nbsp; Professional Grade
+</p>
+""", unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────
+# KPI CARDS
+# ─────────────────────────────────────────────
+st.markdown(f"""
+<div class='kpi-grid'>
+    <div class='kpi-card kpi-blue'>
+        <div class='kpi-label'>Lot Size</div>
+        <div class='kpi-value'>{calc.lot_size:.3f}</div>
+        <div class='kpi-sub'>Standard Lots</div>
+    </div>
+    <div class='kpi-card kpi-gold'>
+        <div class='kpi-label'>Risk Amount</div>
+        <div class='kpi-value'>${calc.risk_amount:,.2f}</div>
+        <div class='kpi-sub'>{risk_percent}% of account</div>
+    </div>
+    <div class='kpi-card kpi-green'>
+        <div class='kpi-label'>Profit if TP Hit</div>
+        <div class='kpi-value'>${calc.profit:,.2f}</div>
+        <div class='kpi-sub'>+{(calc.profit/account_balance*100):.2f}% return</div>
+    </div>
+    <div class='kpi-card kpi-red'>
+        <div class='kpi-label'>Loss if SL Hit</div>
+        <div class='kpi-value'>${calc.loss:,.2f}</div>
+        <div class='kpi-sub'>-{(calc.loss/account_balance*100):.2f}% drawdown</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────
+# RRR + RISK BAR
+# ─────────────────────────────────────────────
+col_rrr, col_riskbar = st.columns([1, 2])
+
+with col_rrr:
+    rrr_color = "#69F0AE" if calc.rrr >= 2 else ("#FFD54F" if calc.rrr >= 1 else "#FF8A80")
+    st.markdown(f"""
+    <div style='padding:1rem 0;'>
+        <div class='section-title'>Risk / Reward</div>
+        <div style='font-family:Space Mono,monospace; font-size:2.4rem;
+                    font-weight:700; color:{rrr_color}; line-height:1;'>
+            1 : {calc.rrr:.2f}
+        </div>
+        <div style='color:#566A80; font-size:0.75rem; margin-top:0.4rem;'>
+            {"✅ Excellent RRR" if calc.rrr >= 2 else ("⚠️ Acceptable RRR" if calc.rrr >= 1 else "❌ Negative RRR")}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_riskbar:
+    bar_class = "risk-safe" if risk_percent <= 2 else ("risk-moderate" if risk_percent <= 4 else "risk-danger")
+    bar_label = "🟢 Safe Zone" if risk_percent <= 2 else ("🟡 Caution Zone" if risk_percent <= 4 else "🔴 Danger Zone")
+    st.markdown(f"""
+    <div style='padding:1rem 0;'>
+        <div class='section-title'>Risk-o-Meter</div>
+        <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;'>
+            <span style='font-size:0.78rem; color:#8899AA;'>{bar_label}</span>
+            <span style='font-family:Space Mono,monospace; font-size:0.9rem; color:#D4AF37; font-weight:700;'>{risk_percent}%</span>
+        </div>
+        <div class='risk-bar-wrap'>
+            <div class='risk-bar-fill {bar_class}' style='width:{min(risk_percent*10, 100)}%;'></div>
+        </div>
+        <div style='display:flex; justify-content:space-between; font-size:0.6rem; color:#566A80; margin-top:0.25rem;'>
+            <span>0%</span><span>2% Safe</span><span>5% Risky</span><span>10%</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────
+# TRADE SUMMARY + LOT SUGGESTIONS
+# ─────────────────────────────────────────────
+col_summ, col_lots = st.columns([1, 1])
+
+with col_summ:
+    st.markdown("<div class='section-title'>Trade Summary</div>", unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class='summary-panel'>
+        <h3>📋 Position Overview</h3>
+        <div class='summary-row'>
+            <span class='sr-label'>Account Balance</span>
+            <span class='sr-val' style='color:#E8EAF0;'>${account_balance:,.2f}</span>
+        </div>
+        <div class='summary-row'>
+            <span class='sr-label'>You are risking</span>
+            <span class='sr-val' style='color:#FFD54F;'>${calc.risk_amount:,.2f} ({risk_percent}%)</span>
+        </div>
+        <div class='summary-row'>
+            <span class='sr-label'>Position Size</span>
+            <span class='sr-val' style='color:#82B1FF;'>{calc.lot_size:.3f} lots</span>
+        </div>
+        <div class='summary-row'>
+            <span class='sr-label'>Stop Loss</span>
+            <span class='sr-val' style='color:#FF8A80;'>{int(sl_pips)} pips → -${calc.loss:,.2f}</span>
+        </div>
+        <div class='summary-row'>
+            <span class='sr-label'>Take Profit</span>
+            <span class='sr-val' style='color:#69F0AE;'>{int(tp_pips)} pips → +${calc.profit:,.2f}</span>
+        </div>
+        <div class='summary-row'>
+            <span class='sr-label'>Risk / Reward</span>
+            <span class='sr-val' style='color:#D4AF37;'>1 : {calc.rrr:.2f}</span>
+        </div>
+        <div class='summary-row'>
+            <span class='sr-label'>Account after Win</span>
+            <span class='sr-val' style='color:#69F0AE;'>${calc.account_after_win:,.2f}</span>
+        </div>
+        <div class='summary-row'>
+            <span class='sr-label'>Account after Loss</span>
+            <span class='sr-val' style='color:#FF8A80;'>${calc.account_after_loss:,.2f}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_lots:
+    st.markdown("<div class='section-title'>Lot Size Suggestions</div>", unsafe_allow_html=True)
+    l1 = calc.lot_for_risk(1)
+    l2 = calc.lot_for_risk(2)
+    l5 = calc.lot_for_risk(5)
+    st.markdown(f"""
+    <div class='lot-row'>
+        <div class='lot-card lc-conservative'>
+            <div class='lc-label'>Conservative</div>
+            <div class='lc-value'>{l1:.3f}</div>
+            <div class='lc-risk'>1% Risk · ${account_balance*0.01:,.0f}</div>
+        </div>
+        <div class='lot-card lc-moderate'>
+            <div class='lc-label'>Moderate</div>
+            <div class='lc-value'>{l2:.3f}</div>
+            <div class='lc-risk'>2% Risk · ${account_balance*0.02:,.0f}</div>
+        </div>
+        <div class='lot-card lc-aggressive'>
+            <div class='lc-label'>Aggressive</div>
+            <div class='lc-value'>{l5:.3f}</div>
+            <div class='lc-risk'>5% Risk · ${account_balance*0.05:,.0f}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<div class='section-title'>Formula Reference</div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07);
+                border-radius:12px; padding:1rem 1.2rem; font-family:Space Mono,monospace;
+                font-size:0.75rem; line-height:2; color:#8899AA;'>
+        <span style='color:#D4AF37;'>Risk $</span>    = Balance × Risk% / 100<br>
+        <span style='color:#82B1FF;'>Lot Size</span>  = Risk$ / (SL pips × $1)<br>
+        <span style='color:#69F0AE;'>Profit</span>    = TP pips × Lot × $1<br>
+        <span style='color:#FF8A80;'>Loss</span>      = SL pips × Lot × $1<br>
+        <span style='color:#FFD54F;'>RRR</span>       = TP pips / SL pips
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────
+# FOOTER
+# ─────────────────────────────────────────────
+st.markdown("""
+<div style='text-align:center; padding:2.5rem 0 1rem 0; color:#2A3A4A;
+            font-size:0.7rem; letter-spacing:0.12em; text-transform:uppercase;'>
+    XAUUSD Risk Management Pro &nbsp;·&nbsp; For Educational Purposes Only &nbsp;·&nbsp;
+    Not Financial Advice
+</div>
+""", unsafe_allow_html=True)
 
 # # Deep blue/navy professional
 # import streamlit as st
